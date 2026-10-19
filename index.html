@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>معرض ملفات اللغة الإنجليزية</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1d2433;--mu:#6b7385;--pr:#2563eb;--ok:#16a34a;--bd:#e3e6ee}
+*{box-sizing:border-box}
+body{margin:0;font-family:Tahoma,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--tx);padding-bottom:90px}
+header{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;padding:28px 16px;text-align:center}
+header h1{margin:0 0 6px;font-size:24px}
+header p{margin:0;opacity:.9;font-size:14px}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabs button,.grades button{flex:1;padding:12px;border:1px solid var(--bd);background:var(--card);border-radius:10px;font:inherit;font-weight:bold;cursor:pointer}
+.tabs button.on,.grades button.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.grades{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.grades button{flex:0 0 auto;padding:8px 14px;font-weight:normal;font-size:14px}
+.unit{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:16px}
+.uh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.uh h3{margin:0;font-size:17px}
+.full{background:var(--ok);color:#fff;border:0;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.it{border:1px solid var(--bd);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.it.sel{border-color:var(--ok);background:#f0fdf4}
+.it b{font-size:14px}.it span{color:var(--mu);font-size:13px}
+.row{display:flex;gap:6px}
+.row button{flex:1;padding:8px 4px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;border:1px solid var(--pr);background:#fff;color:var(--pr)}
+.row .add{background:var(--pr);color:#fff}
+.it.sel .add{background:var(--ok);border-color:var(--ok)}
+#bar{position:fixed;bottom:0;right:0;left:0;background:#fff;border-top:1px solid var(--bd);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:10px;z-index:5}
+#bar.show{display:flex}
+#send{background:#25d366;color:#fff;border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:bold;cursor:pointer}
+#clr{background:none;border:0;color:var(--mu);cursor:pointer;font:inherit}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:10;padding:12px}
+#modal.show{display:flex;flex-direction:column}
+#modal .top{background:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0}
+#modal iframe{flex:1;border:0;background:#fff;border-radius:0 0 12px 12px;width:100%}
+#modal .top button{border:0;background:#eee;border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+footer{text-align:center;color:var(--mu);font-size:13px;padding:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 معرض ملفات اللغة الإنجليزية</h1>
+  <p>شاهد العينة قبل الطلب • الملف 50 ج • الوحدة كاملة 150 ج</p>
+</header>
+<div class="wrap">
+  <div class="tabs" id="tabs"></div>
+  <div class="grades" id="grades"></div>
+  <div id="list"></div>
+  <footer>اختر الملفات ثم اضغط «اطلب عبر واتساب» وسيتم تجهيز الرسالة تلقائياً.</footer>
+</div>
+
+<div id="bar">
+  <div><b id="cnt"></b> • الإجمالي: <b id="tot"></b> ج <button id="clr">مسح</button></div>
+  <button id="send">اطلب عبر واتساب</button>
+</div>
+
+<div id="modal">
+  <div class="top"><b id="mt"></b><button onclick="closeP()">إغلاق ✕</button></div>
+  <iframe id="fr"></iframe>
+</div>
+
+<script>
+/* ===== إعدادات تعدّلها أنت ===== */
+const PHONE = "201004197054";      // رقم واتساب بصيغة دولية
+const FILE_PRICE = 50;             // سعر الملف
+const UNIT_PRICE = 150;            // سعر الوحدة كاملة
+const FOLDER = "samples/";         // فولدر ملفات العينة
+// عدد الوحدات لكل صف (غيّر الأرقام حسب ملفاتك)
+const STAGES = {
+  "ابتدائي": {"الصف الأول":6,"الصف الثاني":6,"الصف الثالث":6,"الصف الرابع":6,"الصف الخامس":6,"الصف السادس":6},
+  "إعدادي": {"الصف الأول الإعدادي":6,"الصف الثاني الإعدادي":6,"الصف الثالث الإعدادي":6},
+  "ثانوي":  {"الصف الأول الثانوي":6,"الصف الثاني الثانوي":6,"الصف الثالث الثانوي":6}
+};
+// أنواع الملفات داخل كل وحدة (الرمز يُستخدم في اسم ملف العينة)
+const TYPES = [["grammar","جرامر"],["vocab","كلمات"],["story","قصة"],["reading","قراءة"],["listening","استماع"]];
+/* اسم ملف العينة: samples/<stageIndex>-<gradeIndex>-u<unit>-<type>.html
+   مثال: samples/1-1-u1-grammar.html (ابتدائي/الصف الأول/وحدة 1/جرامر) */
+/* ================================= */
+
+let stage = Object.keys(STAGES)[0], grade = Object.keys(STAGES[stage])[0];
+const sel = new Map(); // key -> {label}
+
+const $ = id => document.getElementById(id);
+const stageNames = Object.keys(STAGES);
+
+function render(){
+  $("tabs").innerHTML = stageNames.map(s=>`<button class="${s==stage?'on':''}" onclick="setStage('${s}')">${s}</button>`).join("");
+  $("grades").innerHTML = Object.keys(STAGES[stage]).map(g=>`<button class="${g==grade?'on':''}" onclick="setGrade('${g}')">${g}</button>`).join("");
+  const si = stageNames.indexOf(stage)+1, gi = Object.keys(STAGES[stage]).indexOf(grade)+1;
+  let h = "";
+  for(let u=1; u<=STAGES[stage][grade]; u++){
+    h += `<div class="unit"><div class="uh"><h3>الوحدة ${u}</h3>
+      <button class="full" onclick="addUnit(${si},${gi},${u})">+ الوحدة كاملة (${UNIT_PRICE} ج)</button></div><div class="items">`;
+    for(const [t,n] of TYPES){
+      const k = `${si}-${gi}-u${u}-${t}`;
+      h += `<div class="it ${sel.has(k)?'sel':''}"><b>${n}</b><span>${FILE_PRICE} ج</span>
+        <div class="row"><button onclick="preview('${k}','${n} - الوحدة ${u}')">عينة</button>
+        <button class="add" onclick="toggle('${k}')">${sel.has(k)?'✓ تمت الإضافة':'أضف'}</button></div></div>`;
+    }
+    h += `</div></div>`;
+  }
+  $("list").innerHTML = h;
+  bar();
+}
+function setStage(s){stage=s;grade=Object.keys(STAGES[s])[0];render()}
+function setGrade(g){grade=g;render()}
+function label(k){
+  const [si,gi,u,t]=k.split("-"); const s=stageNames[si-1]; const g=Object.keys(STAGES[s])[gi-1];
+  return {s,g,u:u.slice(1),t:TYPES.find(x=>x[0]==t)[1],id:k};
+}
+function toggle(k){sel.has(k)?sel.delete(k):sel.set(k,label(k));render()}
+function addUnit(si,gi,u){TYPES.forEach(([t])=>{const k=`${si}-${gi}-u${u}-${t}`;sel.set(k,label(k))});render()}
+function groups(){
+  const m={};
+  sel.forEach(v=>{const key=`${v.s} - ${v.g} - الوحدة ${v.u}`;(m[key]=m[key]||[]).push(v.t)});
+  return m;
+}
+function total(){
+  let t=0; Object.values(groups()).forEach(a=>{t+=Math.min(a.length*FILE_PRICE,UNIT_PRICE)}); return t;
+}
+function bar(){
+  $("bar").classList.toggle("show",sel.size>0);
+  $("cnt").textContent = sel.size+" ملف";
+  $("tot").textContent = total();
+}
+$("clr").onclick=()=>{sel.clear();render()};
+$("send").onclick=()=>{
+  let m="السلام عليكم، عايز أطلب الملفات دي:\n\n";
+  const g=groups();
+  for(const k in g){
+    const full = g[k].length==TYPES.length;
+    m+=`• ${k}\n   ${full?'الوحدة كاملة':g[k].join(' + ')}\n`;
+  }
+  m+=`\nالإجمالي: ${total()} ج`;
+  window.open(`https://wa.me/${PHONE}?text=${encodeURIComponent(m)}`,"_blank");
+};
+function preview(k,title){
+  $("mt").textContent="عينة: "+title;
+  $("fr").src=FOLDER+k+".html";
+  $("modal").classList.add("show");
+}
+function closeP(){$("modal").classList.remove("show");$("fr").src="about:blank"}
+render();
+</script>
+</body>
+</html>
